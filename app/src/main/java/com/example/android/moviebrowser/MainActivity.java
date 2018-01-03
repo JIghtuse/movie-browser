@@ -1,5 +1,7 @@
 package com.example.android.moviebrowser;
 
+import android.app.LoaderManager;
+import android.content.Loader;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -8,37 +10,44 @@ import android.widget.ListView;
 
 import org.json.JSONException;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity
+        implements LoaderManager.LoaderCallbacks<List<Movie>> {
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
+
+    private MovieAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        List<Movie> movies = QueryUtils.fetchMovieData(QueryUtils.MOVIES_JSON_URL);
-        MovieAdapter movieAdapter = new MovieAdapter(this, movies);
+        adapter = new MovieAdapter(this, new ArrayList<Movie>());
         ListView moviesView = findViewById(R.id.movies_list);
-        moviesView.setAdapter(movieAdapter);
+        moviesView.setAdapter(adapter);
 
+        LoaderManager loaderManager = getLoaderManager();
+        loaderManager.initLoader(1,null, this);
     }
 
-    class MovieAsyncTask extends AsyncTask<String, Void, List<Movie>> {
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
+    @Override
+    public Loader<List<Movie>> onCreateLoader(int i, Bundle bundle) {
+        return new MovieLoader(this, QueryUtils.MOVIES_JSON_URL);
+    }
 
-        @Override
-        protected List<Movie> doInBackground(String... strings) {
-            return QueryUtils.fetchMovieData(strings[0]);
-        }
+    @Override
+    public void onLoadFinished(Loader<List<Movie>> loader, List<Movie> movies) {
+        adapter.clear();
 
-        @Override
-        protected void onPostExecute(List<Movie> movies) {
-            super.onPostExecute(movies);
+        if (movies != null && !movies.isEmpty()) {
+            adapter.addAll(movies);
         }
+    }
+
+    @Override
+    public void onLoaderReset(Loader<List<Movie>> loader) {
+        adapter.clear();
     }
 }
